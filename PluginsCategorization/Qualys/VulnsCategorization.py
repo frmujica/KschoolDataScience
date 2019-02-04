@@ -34,7 +34,7 @@ def GetQualysApiValues(ConfigFile):
     Username = Config['QualysAPIDownload']['User']
     Password = Config['QualysAPIDownload']['Password']
     if Password == '':
-        Password = getpass.getpass() # Ask for API password if does not exist in configuration file
+        Password = getpass.getpass(prompt='Please enter your APIs credentials: ') # Ask for API password if does not exist in configuration file
     Headers = {'X-Requested-With': 'Python3'}
     return (BaseUrl,Username,Password,Headers)
 
@@ -105,6 +105,7 @@ def CleanVendorReferenceList(VRList):
 def CompressCSV(FileName):
     import gzip
     import shutil
+    import os
     FileNameCompressed = FileName + '.gz'
     with open(FileName, 'rb') as f_in, gzip.open(FileNameCompressed, 'wb') as f_out:
         shutil.copyfileobj(f_in, f_out)
