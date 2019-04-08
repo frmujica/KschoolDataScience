@@ -1,7 +1,6 @@
 import requests
 import configparser
 import tarfile
-import os
 
 def GetOpenvasConfigValues(ConfigFile):
     Config = configparser.ConfigParser()
@@ -24,11 +23,7 @@ def DownloadFile(PluginsOutputFile,ConfigFile):
         print('File download has been completed')
 
 def DecompressPluginFile(dirpath,PluginsFile):
-    print('Descompressing file %s',(PluginsFile))
+    print('Descompressing file %s',(PluginsFile)) # Must be the absolute file path 
     tar = tarfile.open(PluginsFile)
     tar.extractall(path=dirpath)
     tar.close()
-
-DownloadFile('OpenvasPlugins/communityopenvas.tar.bz2','OpenvasConfigs/openvasconfig.ini')
-#DecompressPluginFile('OpenvasPlugins','communityopenvas.tar.bz2')
-DecompressPluginFile('OpenvasPlugins','OpenvasPlugins/communityopenvas.tar.bz2')
