@@ -69,10 +69,15 @@ def generate_dataset(filecontent, oid, filename):
     """Function to create "final" dataset"""
     #vendor_reference = "DOES NOT APPLY"
     filecontent = filecontent.decode("ISO-8859-1")
-    start = "if (description)".replace(' ', '')
-    start = filecontent.index("if(description)")
-    end = filecontent.index("include(")
-    text = filecontent[start:end]
+    start = "if (description)".replace(' ', '').rstrip()
+    end = "exit(0)"
+    start_index = filecontent.replace(' ', '').rstrip().index(start)
+    end_index = filecontent.index(end)
+    text = filecontent[start_index:end_index]
+    text = text.replace('if (description)'.replace(' ', '').strip(), '').replace('{', '')
+    text = text.replace('if (description)', '').replace('{', '')
+    #print("Filename is " + filename)
+    #print(text)
     #text = re.search(r'^if.\(description\).*^include\(', filecontent, re.MULTILINE | re.DOTALL)
     #print(text.group(0))
     look_for_script_category = SCRIPTCATEGORY.search(filecontent)
@@ -90,8 +95,7 @@ def generate_dataset(filecontent, oid, filename):
         #Missing vendor references
     plugin_name = plugin_name.replace(',', ' ')
     plugin_name = plugin_name.replace('\"', '')
-    csvdata = str(oid) +  ',' +  str(plugin_name) + ',' + str(filename) \
-            + ',' + str(script_category) + ',' + str(text)
+    csvdata = '\"' + str(oid) + '\"' +  ',' + '\"' + str(plugin_name) + '\"' + ',' + '\"' + str(filename) + '\"' + ',' + '\"' + str(script_category) + '\"' + ',' + '\"' + str(text) + '\"'
     return csvdata
 
 def walk_directories(directory, outputfile):
