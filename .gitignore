@@ -126,4 +126,4 @@ dmypy.json
 .vscode
 
 # PErsonal project
-OpenvasPlugins/
+PluginsOpenvas*
