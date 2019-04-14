@@ -32,3 +32,4 @@ def decompress_plugin_file(dirpath, plugins_file):
     tar = tarfile.open(plugins_file)
     tar.extractall(path=dirpath)
     tar.close()
+    print("Descompress has been completed")
