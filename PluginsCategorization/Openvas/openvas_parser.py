@@ -13,9 +13,16 @@ FAMILY = re.compile(r'script\_family\(\"(?P<script_family>.*?)\"\)')
 SOLUTION = re.compile(r'script\_tag\(name.*?\"solution\".*?value.*?\:(?P<solution>.*)')
 TAG_SOL = re.compile(r'tag\_solution.?\=.*?\"(?P<tag_solution>.*)')
 SCRIPTCATEGORY = re.compile(r'script\_category\((?P<script_category>.*?)\)')
+SCRIPTFAMILY = re.compile(r'script\_family\((?P<script_family>.*?)\)')
 SCRIPTNAME = re.compile(r'script\_name\(.*?(\"|\')(?P<script_name>.*?)(\"|\').*?\)')
 SCRIPTNAME_ALTERNATIVE = re.compile(r'name.*?\=.*?(\"|\')(?P<script_name>.*?)(\"|\')')
-CREATION_DATE = re.compile(r'creation_date\"\,.*?value\:\"(?P<creation_date>\d+\-\d+\-\d+\s+\d+\:\d+\:\d+)')
+CREATION_DATE = re.compile(
+    r'creation_date\"\,.*?value\:\"(?P<creation_date>\d+\-\d+\-\d+\s+\d+\:\d+\:\d+)')
+LAST_MODIFICATION = re.compile(
+    r'last_modification\"\,.*?value\:\".*?(?P<last_modification>\d+\-\d+\-\d+\s+\d+\:\d+\:\d+)')
+CVE = re.compile(r'(?P<cve_data>CVE\-\d+\-\d+)')
+CVSS = re.compile(r'\"cvss_base\".*value\:.*?\"(?P<cvss_base>.*?)\"')
+CVSS_VECTOR = re.compile(r'\"cvss_base\_vector\"\,.*?value.*?\:.*?\"(?P<cvss_vector>.*?)\"')
 VENDORCSV = []
 
 def read_vendor_reference_csv(filename):
@@ -57,6 +64,8 @@ def clean_text(text):
     text = text.replace('if(description)'.replace(' ', '').strip(), '').replace('{', '')
     text = text.replace('if(description)', '').replace('{', '')
     text = re.sub(r'\#+', '', text)
+    text = re.sub(r'.*?51.*?Franklin.*?St.*', '', text)
+    text = re.sub(r'MA 02110-1301 USA', '', text)
     text = re.sub(r'^\n+', '', text)
     text = text.strip()
     return text
@@ -65,29 +74,43 @@ def generate_dataset(filecontent, oid, filename):
     """Function to create "final" dataset"""
     #vendor_reference = "DOES NOT APPLY"
     filecontent = filecontent.decode("ISO-8859-1")
+    #last_modification = "None"
     text = get_block_of_text("if (description)", "exit(0);", filecontent)
     text = clean_text(text)
-    look_for_script_category = SCRIPTCATEGORY.search(filecontent)
-    look_for_script_name = SCRIPTNAME.search(filecontent)
-    look_for_script_name_alt = SCRIPTNAME_ALTERNATIVE.search(filecontent)
-    look_for_creation_date = CREATION_DATE.search(filecontent)
-    print(filename)
-    if look_for_creation_date:
-        creation_date = look_for_creation_date.group('creation_date')
-    if look_for_script_category:
-        script_category = look_for_script_category.group('script_category')
-    if look_for_script_name:
-        scriptname = look_for_script_name.group('script_name')
+    cve = CVE.findall(filecontent)
+    if CREATION_DATE.search(filecontent):
+        creation_date = CREATION_DATE.search(filecontent).group('creation_date')
+    if LAST_MODIFICATION.search(filecontent):
+        last_modification = LAST_MODIFICATION.search(filecontent).group('last_modification')
+    if SCRIPTCATEGORY.search(filecontent):
+        script_category = SCRIPTCATEGORY.search(filecontent).group('script_category')
+        script_category = script_category.replace('\"', '').strip()
+    if SCRIPTFAMILY.search(filecontent):
+        script_family = SCRIPTFAMILY.search(filecontent).group('script_family')
+        script_family = script_family.replace('\"', '').strip()
+    if SCRIPTNAME.search(filecontent):
+        scriptname = SCRIPTNAME.search(filecontent).group('script_name')
         plugin_name = scriptname
         #Missing vendor references
-    if look_for_script_name_alt:
-        scriptname = look_for_script_name_alt.group('script_name')
+    if SCRIPTNAME_ALTERNATIVE.search(filecontent):
+        scriptname = SCRIPTNAME_ALTERNATIVE.search(filecontent).group('script_name')
         plugin_name = scriptname
         #Missing vendor references
+    if CVSS.search(filecontent):
+        cvss = CVSS.search(filecontent).group('cvss_base')
+        cvss = cvss.strip()
+    if CVSS_VECTOR.search(filecontent):
+        cvss_vector = CVSS_VECTOR.search(filecontent).group('cvss_vector')
+        cvss_vector = cvss_vector.strip()
     plugin_name = plugin_name.replace(',', ' ')
     plugin_name = plugin_name.replace('\"', '')
-    jsondata = {"oid": oid, "creation_date": creation_date, "plugin_name": plugin_name,
-                "filename": filename, "script_category": script_category, "text": text}
+    jsondata = {"oid": oid, "creation_date": creation_date,
+                "last_modification_date":last_modification,
+                "plugin_name": plugin_name, "filename": filename,
+                "script_category": script_category, "script_family": script_family,
+                "cve": cve,
+                "cvss": cvss, "cvss_vector": cvss_vector,
+                "text": text}
     return jsondata
 
 def walk_directories(directory, outputfile):
